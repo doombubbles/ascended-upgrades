@@ -3,10 +3,10 @@ using System.Linq;
 using MelonLoader;
 using BTD_Mod_Helper;
 using AscendedUpgrades;
-using Assets.Scripts.Models;
-using Assets.Scripts.Models.Profile;
-using Assets.Scripts.Models.Towers.Upgrades;
-using Assets.Scripts.Simulation.Towers;
+using Il2CppAssets.Scripts.Models;
+using Il2CppAssets.Scripts.Models.Profile;
+using Il2CppAssets.Scripts.Models.Towers.Upgrades;
+using Il2CppAssets.Scripts.Simulation.Towers;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.ModOptions;
@@ -51,8 +51,7 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         description = "Whether the grid of blue upgrade pips appears as you purchase Ascended Upgrades",
         icon = ModContent.GetTextureGUID<AscendedUpgradesMod>("AscendedPip")
     };
-
-
+    
     public static readonly ModSettingBool SharedUpgradeScaling = new(false)
     {
         displayName = "Cost Scaling Across Upgrades",

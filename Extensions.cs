@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Assets.Scripts.Models.Towers.Upgrades;
-using Assets.Scripts.Simulation.Towers;
+using Il2CppAssets.Scripts.Models.Towers.Upgrades;
+using Il2CppAssets.Scripts.Simulation.Towers;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Extensions;
 
@@ -16,11 +16,11 @@ public static class Extensions
     /// <returns></returns>
     public static bool HasAscendedUpgrades(this Tower tower) =>
         tower.towerModel.tier == 5 &&
-        !tower.CanUpgradeToParagon(true) &&
-        tower.towerModel.upgrades.Any(upgradePathModel => upgradePathModel.IsAscended());
+        tower.towerModel.upgrades.Any(upgradePathModel => upgradePathModel.IsAscended()) &&
+        !tower.CanUpgradeToParagon(true, 3);
 
     public static bool IsAscended(this UpgradePathModel model) => AscendedUpgrade.IdByPath.ContainsValue(model.upgrade);
-    
+
     public static Dictionary<AscendedUpgrade, int> GetAscendedStacks(this Tower tower) =>
         ModContent.GetContent<AscendedUpgrade>()
             .ToDictionary(

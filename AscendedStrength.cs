@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
-using Assets.Scripts.Models;
-using Assets.Scripts.Models.Towers.Projectiles;
-using Assets.Scripts.Models.Towers.Projectiles.Behaviors;
-using Assets.Scripts.Simulation.Objects;
-using Assets.Scripts.Simulation.Towers.Behaviors;
+using Il2CppAssets.Scripts.Models;
+using Il2CppAssets.Scripts.Models.Towers.Projectiles;
+using Il2CppAssets.Scripts.Models.Towers.Projectiles.Behaviors;
+using Il2CppAssets.Scripts.Simulation.Objects;
+using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Display;
 using BTD_Mod_Helper.Api.Enums;

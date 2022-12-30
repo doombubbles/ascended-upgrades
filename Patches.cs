@@ -1,13 +1,13 @@
 ﻿using System.Linq;
-using Assets.Scripts;
-using Assets.Scripts.Models.Towers;
-using Assets.Scripts.Models.Towers.Upgrades;
-using Assets.Scripts.Simulation;
-using Assets.Scripts.Simulation.Towers;
-using Assets.Scripts.Unity.Bridge;
-using Assets.Scripts.Unity.UI_New.InGame;
-using Assets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
-using Assets.Scripts.Utils;
+using Il2CppAssets.Scripts;
+using Il2CppAssets.Scripts.Models.Towers;
+using Il2CppAssets.Scripts.Models.Towers.Upgrades;
+using Il2CppAssets.Scripts.Simulation;
+using Il2CppAssets.Scripts.Simulation.Towers;
+using Il2CppAssets.Scripts.Unity.Bridge;
+using Il2CppAssets.Scripts.Unity.UI_New.InGame;
+using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
+using Il2CppAssets.Scripts.Utils;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
@@ -180,7 +180,7 @@ internal static class Simulation_GetSimulationBehaviorDiscount
             var stacks = tower.GetAscendedStacks();
             var amount = AscendedUpgradesMod.SharedUpgradeScaling
                 ? stacks.Sum(pair => pair.Value)
-                : stacks.First(pair => pair.Key.Path == path).Value;
+                : stacks.Where(pair => pair.Key.Path == path).Select(pair => pair.Value).SingleOrDefault();
             __result -= amount * mult;
         }
     }
