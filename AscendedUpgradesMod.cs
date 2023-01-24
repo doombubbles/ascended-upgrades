@@ -51,7 +51,7 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         description = "Whether the grid of blue upgrade pips appears as you purchase Ascended Upgrades",
         icon = ModContent.GetTextureGUID<AscendedUpgradesMod>("AscendedPip")
     };
-    
+
     public static readonly ModSettingBool SharedUpgradeScaling = new(false)
     {
         displayName = "Cost Scaling Across Upgrades",
@@ -74,7 +74,7 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         enabledText = "Global",
         enabledButton = VanillaSprites.YellowBtnLong
     };
-    
+
     public override void OnProfileLoaded(ProfileModel profile)
     {
         foreach (var ascendedUpgrade in ModContent.GetContent<AscendedUpgrade>())
@@ -119,10 +119,10 @@ public class AscendedUpgradesMod : BloonsTD6Mod
 
     public override void OnNewGameModel(GameModel gameModel)
     {
-        foreach (var towerModel in gameModel.towers)
+        foreach (var towerModel in gameModel.towers.Where(model => !model.IsHero()))
         {
             var upgradeModels = towerModel.upgrades.Select(model => gameModel.GetUpgrade(model.upgrade));
-            if (towerModel.tier == 5 && upgradeModels.All(model => model.IsParagon))
+            if (towerModel.tier == 5 && upgradeModels.All(model => model.IsParagon)) // Either none, or all paragon
             {
                 towerModel.upgrades = ModContent.GetContent<AscendedUpgrade>()
                     .Select(upgrade => new UpgradePathModel(upgrade.Id, towerModel.name))

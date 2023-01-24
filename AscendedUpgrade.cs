@@ -58,7 +58,7 @@ public abstract class AscendedUpgrade : NamedModContent
 
     public void Apply(Tower tower)
     {
-        tower.AddMutatorIncludeSubTowers(Mutator, -1, roundsRemaining: -1);
+        tower.AddMutatorIncludeSubTowers(Mutator);
         ChangeUpgradeCosts(AscendedUpgradesMod.UpgradeCostIncrease);
     }
 

@@ -1,1 +1,1 @@
-- Initial Release
+- Fixed crash with placing Heroes
