@@ -1,1 +1,3 @@
-- Fixed crash with placing Heroes
+- Fixed issue with upgrades not applying properly when you were low on cash (capitalism moment)
+- Made the custom upgrade button texture more consistent
+  - Now just uses the standard grayed out texture when you don't have enough money

@@ -1,4 +1,10 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using BTD_Mod_Helper;
+using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Extensions;
+using HarmonyLib;
 using Il2CppAssets.Scripts;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
@@ -8,13 +14,6 @@ using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppAssets.Scripts.Utils;
-using BTD_Mod_Helper;
-using BTD_Mod_Helper.Api;
-using BTD_Mod_Helper.Api.Components;
-using BTD_Mod_Helper.Api.Enums;
-using BTD_Mod_Helper.Extensions;
-using HarmonyLib;
-using UnityEngine;
 
 namespace AscendedUpgrades;
 
@@ -76,59 +75,32 @@ internal static class UpgradeObject_LoadUpgrades
 internal static class UpgradeObject_IncreaseTier
 {
     [HarmonyPrefix]
-    private static bool Prefix(UpgradeObject __instance)
-    {
-        return !__instance.tts.tower.HasAscendedUpgrades();
-    }
+    private static bool Prefix(UpgradeObject __instance) => !__instance.tts.tower.HasAscendedUpgrades();
 }
 
 /// <summary>
 /// Change the look of the upgrade background for ascended upgrades
 /// </summary>
-[HarmonyPatch(typeof(UpgradeButton), nameof(UpgradeButton.UpdateVisuals))]
-internal static class UpgradeButton_UpdateVisuals
+[HarmonyPatch]
+internal static class UpgradeButton_Visuals
 {
+    private static IEnumerable<MethodBase> TargetMethods()
+    {
+        yield return AccessTools.Method(typeof(UpgradeButton), nameof(UpgradeButton.UpdateVisuals));
+        yield return AccessTools.Method(typeof(UpgradeButton), nameof(UpgradeButton.LoadBackground));
+        yield return AccessTools.Method(typeof(UpgradeButton), nameof(UpgradeButton.CheckCash));
+    }
+
     [HarmonyPostfix]
     private static void Postfix(UpgradeButton __instance)
     {
         var upgradeId = __instance.upgrade?.name ?? "";
-        if (AscendedUpgrade.IdByPath.ContainsValue(upgradeId))
+        if (AscendedUpgrade.IdByPath.ContainsValue(upgradeId) &&
+            __instance.upgradeStatus == UpgradeButton.UpgradeStatus.Purchasable)
         {
             ResourceLoader.LoadSpriteFromSpriteReferenceAsync(
                 ModContent.GetSpriteReference<AscendedUpgradesMod>("AscendedArrowBtn"),
                 __instance.background);
-        }
-    }
-}
-
-/// <summary>
-/// Make sure that an Ascended Upgrade goes through with the noise / sound, and also applies its effects
-/// </summary>
-[HarmonyPatch(typeof(UnityToSimulation), nameof(UnityToSimulation.UpgradeTower_Impl))]
-internal static class UnityToSimulation_UpgradeTower_Impl
-{
-    internal static UpgradeModel? current;
-
-    [HarmonyPostfix]
-    private static void Postfix(UnityToSimulation __instance, ObjectId id, int pathIndex, int inputId)
-    {
-        if (current == null) return;
-
-        var towerManager = __instance.simulation.towerManager;
-        var tower = towerManager.GetTowerById(id);
-        var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, 5, -1);
-
-
-        if (tower.HasAscendedUpgrades() &&
-            current.name.StartsWith(nameof(AscendedUpgrade)) &&
-            cost < __instance.Simulation.GetCash(inputId))
-        {
-            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost, 1f);
-#if DEBUG
-            ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
-#endif
-            var ascendedUpgrade = AscendedUpgrade.ByPath[pathIndex];
-            ascendedUpgrade.Apply(tower);
         }
     }
 }
@@ -141,6 +113,38 @@ internal static class TowerSelectionMenu_UpgradeTower
     private static void Prefix(UpgradeModel upgrade)
     {
         UnityToSimulation_UpgradeTower_Impl.current = upgrade;
+        UnityToSimulation_UpgradeTower_Impl.cash = InGame.instance.GetCash();
+    }
+}
+
+/// <summary>
+/// Make sure that an Ascended Upgrade goes through with the noise / sound, and also applies its effects
+/// </summary>
+[HarmonyPatch(typeof(UnityToSimulation), nameof(UnityToSimulation.UpgradeTower_Impl))]
+internal static class UnityToSimulation_UpgradeTower_Impl
+{
+    internal static UpgradeModel? current;
+    internal static double cash;
+
+    [HarmonyPostfix]
+    private static void Postfix(UnityToSimulation __instance, ObjectId id, int pathIndex, int inputId)
+    {
+        if (current == null) return;
+
+        var towerManager = __instance.simulation.towerManager;
+        var tower = towerManager.GetTowerById(id);
+        var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, 5);
+
+        if (tower.HasAscendedUpgrades() && current.name.StartsWith(nameof(AscendedUpgrade)) && cost <= cash)
+        {
+            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost);
+            InGame.instance.SetCash(cash - cost);
+#if DEBUG
+            ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
+#endif
+            var ascendedUpgrade = AscendedUpgrade.ByPath[pathIndex];
+            ascendedUpgrade.Apply(tower);
+        }
     }
 }
 

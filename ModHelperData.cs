@@ -2,8 +2,8 @@ namespace AscendedUpgrades;
 
 public static class ModHelperData
 {
-    public const string WorksOnVersion = "34.3";
-    public const string Version = "1.0.1";
+    public const string WorksOnVersion = "35.0";
+    public const string Version = "1.0.2";
     public const string Name = "Ascended Upgrades";
 
     public const string Description = "Adds special Ascended Upgrades that you can use to infinitely upgrade towers.\n" +
