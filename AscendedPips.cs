@@ -20,7 +20,7 @@ public class AscendedPips : MonoBehaviour
 
     public ModHelperScrollPanel scrollPanel = null!;
 
-    public List<GameObject> pips = null!;
+    public List<GameObject>? pips;
 
     public GameObject pipPrefab = null!;
 
@@ -56,10 +56,16 @@ public class AscendedPips : MonoBehaviour
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         pipPrefab = CreatePipPrefab();
+        
+        // Re-initialize the mask to fix Paths++ mask interaction ¯\_(ツ)_/¯
+        scrollPanel.GetComponent<Mask>().enabled = false;
+        scrollPanel.GetComponent<Mask>().enabled = true;
     }
 
     public void SetAmount(int amount)
     {
+        if (pips == null) return;
+
         for (var i = pips.Count; i < amount; i++)
         {
             AddPip(i);
@@ -90,6 +96,8 @@ public class AscendedPips : MonoBehaviour
 
     public void AddPip(int i)
     {
+        if (pips == null) return;
+        
         var pip = pipPrefab.Duplicate(scrollPanel.ScrollContent);
         pip.name = $"Pip{i}";
         pips.Add(pip);

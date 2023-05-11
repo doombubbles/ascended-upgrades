@@ -51,7 +51,7 @@ internal static class UpgradeObject_LoadUpgrades
             ascendedPips = AscendedPips.Create(__instance);
         }
 
-        if (!__instance.tts.tower.HasAscendedUpgrades())
+        if (!__instance.tts.tower.HasAscendedUpgrades() || __instance.path >= 3)
         {
             ascendedPips.SetAmount(0);
             return;
