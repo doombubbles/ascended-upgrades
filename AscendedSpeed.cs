@@ -6,6 +6,7 @@ using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Display;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
+using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 
 namespace AscendedUpgrades;
 
@@ -15,7 +16,7 @@ public class AscendedSpeed : AscendedUpgrade<AscendedSpeedIcon>
 
     public override int Path => 1;
 
-    protected override BehaviorMutator CreateMutator() => new RateSupport.RateSupportMutator(false, Id,
+    protected override BehaviorMutator CreateMutator() => new RateSupportModel.RateSupportMutator(false, Id,
         1 / (1 + AscendedUpgradesMod.UpgradeFactor), 999, BuffIndicatorModel);
 }
 
@@ -26,11 +27,11 @@ public class AscendedSpeedIcon : ModBuffIcon
     protected override int Order => 1;
 }
 
-[HarmonyPatch(typeof(RateSupport.RateSupportMutator), nameof(RateSupport.RateSupportMutator.Mutate))]
+[HarmonyPatch(typeof(RateSupportModel.RateSupportMutator), nameof(RateSupportModel.RateSupportMutator.Mutate))]
 internal static class RateMutator_Mutate
 {
     [HarmonyPrefix]
-    private static bool Prefix(RateSupport.RateSupportMutator __instance, Model model)
+    private static bool Prefix(RateSupportModel.RateSupportMutator __instance, Model model)
     {
         if (__instance.id == ModContent.GetInstance<AscendedSpeed>().Id)
         {

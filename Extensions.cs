@@ -4,6 +4,8 @@ using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Extensions;
+using Il2CppAssets.Scripts.Simulation.Objects;
+using Il2CppSystem.Linq;
 
 namespace AscendedUpgrades;
 
@@ -25,6 +27,7 @@ public static class Extensions
         ModContent.GetContent<AscendedUpgrade>()
             .ToDictionary(
                 upgrade => upgrade,
-                upgrade => tower.GetMutators().Where(mutator => mutator.mutator.id.Contains(upgrade.Id)).Count
+                upgrade => tower.GetMutators().Cast<Il2CppSystem.Collections.Generic.IEnumerable<TimedMutator>>()
+                    .ToArray().Count(mutator => mutator.mutator.id.Contains(upgrade.Id))
             );
 }

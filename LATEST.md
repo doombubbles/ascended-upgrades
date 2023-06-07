@@ -1,1 +1,1 @@
-- Compatibility improvements with Paths++
+- Fixed for BTD6 v37.0
