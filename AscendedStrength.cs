@@ -55,6 +55,7 @@ internal static class DamageSupport_MutatorTower_Mutate
                         else
                         {
                             proj.AddBehavior(new DamageModifierForTagModel(name, tag, mult, 0, false, true));
+                            proj.hasDamageModifiers = true;
                         }
                     }
                 }
