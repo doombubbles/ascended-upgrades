@@ -20,9 +20,11 @@ public abstract class AscendedUpgrade : NamedModContent
 {
     protected abstract ModBuffIcon ModBuffIcon { get; }
 
-    protected BuffIndicatorModel BuffIndicatorModel => (InGame.instance.Exists()?.GetGameModel() ?? Game.instance.model)
+    protected BuffIndicatorModel? BuffIndicatorModel => AscendedUpgradesMod.ShowBuffIndicators
+        ? (InGame.instance.Exists()?.GetGameModel() ?? Game.instance.model)
         .buffIndicatorModels
-        .First(model => model.name == $"BuffIndicatorModel_{ModBuffIcon.Id}-{ModBuffIcon.Icon}");
+        .First(model => model.name == $"BuffIndicatorModel_{ModBuffIcon.Id}-{ModBuffIcon.Icon}")
+        : null;
 
     public static readonly Dictionary<int, string> IdByPath = new();
     public static readonly Dictionary<int, AscendedUpgrade> ByPath = new();
@@ -70,7 +72,7 @@ public abstract class AscendedUpgrade : NamedModContent
     private void ChangeUpgradeCosts(float delta)
     {
         if (!AscendedUpgradesMod.SharedTowerScaling) return;
-        
+
         var gameModel = InGame.instance.bridge.Model;
         var affected = AscendedUpgradesMod.SharedUpgradeScaling
             ? GetContent<AscendedUpgrade>()

@@ -51,6 +51,14 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         description = "Whether the grid of blue upgrade pips appears as you purchase Ascended Upgrades",
         icon = ModContent.GetTextureGUID<AscendedUpgradesMod>("AscendedPip")
     };
+    
+    public static readonly ModSettingBool ShowBuffIndicators = new(true)
+    {
+        displayName = "Show Buff Indicators",
+        description = "",
+        icon = VanillaSprites.BuffIconComeOnEverybodyRate
+    };
+
 
     public static readonly ModSettingBool SharedUpgradeScaling = new(false)
     {

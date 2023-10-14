@@ -133,7 +133,7 @@ internal static class UpgradeButton_Visuals
 }
 
 [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.UpgradeTower), typeof(UpgradeModel), typeof(int),
-    typeof(float))]
+    typeof(float), typeof(double))]
 internal static class TowerSelectionMenu_UpgradeTower
 {
     [HarmonyPrefix]
