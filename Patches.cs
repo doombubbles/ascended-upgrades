@@ -156,13 +156,16 @@ internal static class UnityToSimulation_UpgradeTower_Impl
     [HarmonyPostfix]
     private static void Postfix(UnityToSimulation __instance, ObjectId id, int pathIndex, int inputId)
     {
-        if (current == null) return;
+        if (current == null || pathIndex >= 3) return;
 
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
+        
+        if (!tower.HasAscendedUpgrades()) return;
+        
         var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, 5);
 
-        if (tower.HasAscendedUpgrades() && current.name.StartsWith(nameof(AscendedUpgrade)) && cost <= cash)
+        if (current.name.StartsWith(nameof(AscendedUpgrade)) && cost <= cash)
         {
             towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost);
             InGame.instance.SetCash(cash - cost);
