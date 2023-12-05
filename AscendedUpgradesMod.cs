@@ -28,7 +28,7 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         icon = VanillaSprites.CoinIcon // VanillaSprites.MoneyBag
     };
 
-    public static readonly ModSettingInt UpgradeCostIncrease = new(1000)
+    public static readonly ModSettingInt IncreaseUpgradeCost = new(500)
     {
         description =
             "How much the cost increases for further Ascended Upgrades each time you buy one (medium difficulty).",
@@ -45,20 +45,27 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         icon = VanillaSprites.MonkeyBoostIcon
     };
 
+    public static readonly ModSettingBool OpMultiplicativeScaling = new(false)
+    {
+        description =
+            "Brings back the old behavior of multiplicative upgrade effect scaling that was very OP given that " +
+            "the cost scaling was additive.",
+        icon = VanillaSprites.BiohackIconAA
+    };
+
     public static readonly ModSettingBool ShowUpgradePips = new(true)
     {
         displayName = "Show Upgrade Pips",
         description = "Whether the grid of blue upgrade pips appears as you purchase Ascended Upgrades",
         icon = ModContent.GetTextureGUID<AscendedUpgradesMod>("AscendedPip")
     };
-    
+
     public static readonly ModSettingBool ShowBuffIndicators = new(true)
     {
         displayName = "Show Buff Indicators",
-        description = "",
+        description = "Whether to show the number of Ascended Upgrades purchased as buffs on the tower",
         icon = VanillaSprites.BuffIconComeOnEverybodyRate
     };
-
 
     public static readonly ModSettingBool SharedUpgradeScaling = new(false)
     {
@@ -117,10 +124,7 @@ public class AscendedUpgradesMod : BloonsTD6Mod
             if (saveData.metaData.ContainsKey(ascendedUpgrade.Id) &&
                 int.TryParse(saveData.metaData[ascendedUpgrade.Id], out var stacks))
             {
-                for (var i = 0; i < stacks; i++)
-                {
-                    ascendedUpgrade.Apply(tower);
-                }
+                ascendedUpgrade.Apply(tower, stacks, stacks);
             }
         }
     }

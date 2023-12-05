@@ -1,1 +1,11 @@
-- Fixed for BTD6 v39.0
+- Fixed for v40.0
+- Reworked the way Ascended Upgrades internally stack, which means:
+    - No more lag from purchasing upgrades / selecting towers
+    - Upgrade effects now stack **additively** instead of multiplicatively by default
+        - I made this change because otherwise the power scaling far outpaces the cost and can trivialize freeplay
+        - The old behavior can be restored by enabling the "Op Multiplicative Scaling" mod option
+        - Changed the default Upgrade Cost Increase setting from $1000 to $500 now that it scales less
+- Upgrades now have additional effects for the non damaging effects of towers
+    - Ascended Strength also increases the value of cash generation effects and improves damage buffs given by the tower
+    - Ascended Speed also increases production speed (bananas/crates per turn) and improves attack speed buffs given by the tower
+    - Ascended Force also increases capacity of banks/traps and improves range/pierce buffs given by the tower

@@ -23,11 +23,18 @@ public static class Extensions
 
     public static bool IsAscended(this UpgradePathModel model) => AscendedUpgrade.IdByPath.ContainsValue(model.upgrade);
 
+    public static int AscendedStackCount(this BehaviorMutator behaviorMutator) =>
+        AscendedUpgrade.ById.TryGetValue(behaviorMutator.id, out var upgrade)
+            ? upgrade.GetStacks(behaviorMutator)
+            : 0;
+
     public static Dictionary<AscendedUpgrade, int> GetAscendedStacks(this Tower tower) =>
-        ModContent.GetContent<AscendedUpgrade>()
-            .ToDictionary(
-                upgrade => upgrade,
-                upgrade => tower.GetMutators().Cast<Il2CppSystem.Collections.Generic.IEnumerable<TimedMutator>>()
-                    .ToArray().Count(mutator => mutator.mutator.id.Contains(upgrade.Id))
-            );
+        ModContent.GetContent<AscendedUpgrade>().ToDictionary(
+            upgrade => upgrade,
+            upgrade => tower.GetMutators().Cast<Il2CppSystem.Collections.Generic.IEnumerable<TimedMutator>>()
+                .ToArray()
+                .Where(mutator => mutator.mutator.id.Contains(upgrade.Id))
+                .Select(mutator => mutator.mutator.AscendedStackCount())
+                .SingleOrDefault(0)
+        );
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.GenericBehaviors;
@@ -28,15 +29,13 @@ public abstract class AscendedUpgrade : NamedModContent
 
     public static readonly Dictionary<int, string> IdByPath = new();
     public static readonly Dictionary<int, AscendedUpgrade> ByPath = new();
+    public static readonly Dictionary<string, AscendedUpgrade> ById = new();
 
     public abstract int Path { get; }
 
     protected sealed override int Order => Path;
-
     protected virtual string Icon => Name;
-
     protected virtual SpriteReference IconReference => GetSpriteReferenceOrDefault(Icon);
-
 
     public override void Register()
     {
@@ -47,29 +46,27 @@ public abstract class AscendedUpgrade : NamedModContent
 
         IdByPath[Path] = Id;
         ByPath[Path] = this;
+        ById[Id] = this;
     }
 
-    protected abstract BehaviorMutator CreateMutator();
-
-    private BehaviorMutator? mutator;
-
-    protected BehaviorMutator Mutator => mutator ??= CreateMutator();
+    protected abstract BehaviorMutator CreateMutator(int stacks);
 
     public UpgradeModel GetUpgradeModel(GameModel? gameModel = null) =>
-        (gameModel ?? InGame.instance.Exists()?.GetGameModel() ?? Game.instance.model).upgradesByName[Id];
+        (gameModel ?? InGame.instance.Exists()?.GetGameModel() ?? Game.instance.model).GetUpgrade(Id);
 
-    public void Apply(Tower tower)
+    public void Apply(Tower tower, int stacks, int delta)
     {
-        tower.AddMutatorIncludeSubTowers(Mutator);
-        ChangeUpgradeCosts(AscendedUpgradesMod.UpgradeCostIncrease);
+        tower.RemoveMutatorsById(Id);
+        tower.AddMutatorIncludeSubTowers(CreateMutator(stacks));
+        ChangeUpgradeCosts(stacks);
     }
 
-    public void UnApply()
+    public void UnApply(int stacks)
     {
-        ChangeUpgradeCosts(-AscendedUpgradesMod.UpgradeCostIncrease);
+        ChangeUpgradeCosts(-stacks);
     }
 
-    private void ChangeUpgradeCosts(float delta)
+    private void ChangeUpgradeCosts(int deltaStacks)
     {
         if (!AscendedUpgradesMod.SharedTowerScaling) return;
 
@@ -77,9 +74,11 @@ public abstract class AscendedUpgrade : NamedModContent
         var affected = AscendedUpgradesMod.SharedUpgradeScaling
             ? GetContent<AscendedUpgrade>()
             : new List<AscendedUpgrade> { this };
+
         foreach (var ascendedUpgrade in affected)
         {
-            ascendedUpgrade.GetUpgradeModel(gameModel).cost += CostHelper.CostForDifficulty((int) delta, gameModel);
+            ascendedUpgrade.GetUpgradeModel(gameModel).cost +=
+                CostHelper.CostForDifficulty(deltaStacks * AscendedUpgradesMod.IncreaseUpgradeCost, gameModel);
         }
 
         if (TowerSelectionMenu.instance.Exists(out var tsm) && tsm.upgradeButtons != null)
@@ -95,6 +94,12 @@ public abstract class AscendedUpgrade : NamedModContent
             }
         }
     }
+
+    public virtual int GetStacks(BehaviorMutator behaviorMutator) => behaviorMutator.priority;
+
+    protected static float GetFactor(int stacks) => AscendedUpgradesMod.OpMultiplicativeScaling
+        ? (float) Math.Pow(1 + AscendedUpgradesMod.UpgradeFactor, stacks) - 1f
+        : AscendedUpgradesMod.UpgradeFactor * stacks;
 }
 
 public abstract class AscendedUpgrade<T> : AscendedUpgrade where T : ModBuffIcon

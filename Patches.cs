@@ -9,6 +9,7 @@ using Il2CppAssets.Scripts;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation;
+using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
@@ -160,9 +161,9 @@ internal static class UnityToSimulation_UpgradeTower_Impl
 
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
-        
+
         if (!tower.HasAscendedUpgrades()) return;
-        
+
         var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, 5);
 
         if (current.name.StartsWith(nameof(AscendedUpgrade)) && cost <= cash)
@@ -173,7 +174,8 @@ internal static class UnityToSimulation_UpgradeTower_Impl
             ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
 #endif
             var ascendedUpgrade = AscendedUpgrade.ByPath[pathIndex];
-            ascendedUpgrade.Apply(tower);
+            var stacks = tower.GetAscendedStacks()[ascendedUpgrade];
+            ascendedUpgrade.Apply(tower, stacks + 1, 1);
         }
     }
 }
@@ -191,10 +193,7 @@ internal static class TowerManager_DestroyTower
 
         foreach (var (ascendedUpgrade, stacks) in tower.GetAscendedStacks())
         {
-            for (var i = 0; i < stacks; i++)
-            {
-                ascendedUpgrade.UnApply();
-            }
+            ascendedUpgrade.UnApply(stacks);
         }
     }
 }
@@ -210,12 +209,24 @@ internal static class Simulation_GetSimulationBehaviorDiscount
     {
         if (tower.HasAscendedUpgrades() && !AscendedUpgradesMod.SharedTowerScaling)
         {
-            var mult = AscendedUpgradesMod.UpgradeCostIncrease / (float) AscendedUpgradesMod.BaseUpgradeCost;
+            var mult = AscendedUpgradesMod.IncreaseUpgradeCost / (float) AscendedUpgradesMod.BaseUpgradeCost;
             var stacks = tower.GetAscendedStacks();
             var amount = AscendedUpgradesMod.SharedUpgradeScaling
                 ? stacks.Sum(pair => pair.Value)
                 : stacks.Where(pair => pair.Key.Path == path).Select(pair => pair.Value).SingleOrDefault();
             __result -= amount * mult;
         }
+    }
+}
+
+[HarmonyPatch(typeof(BuffIcon), nameof(BuffIcon.Show))]
+internal static class BuffIcon_Show
+{
+    [HarmonyPrefix]
+    private static void Prefix(BuffQuery buff)
+    {
+        if (!buff.buffIndicator.name.Contains(nameof(AscendedUpgrades))) return;
+
+        buff.availableBuffCount = buff.timedMutator.mutator.AscendedStackCount();
     }
 }
