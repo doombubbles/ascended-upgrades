@@ -1,7 +1,5 @@
 ﻿using System;
-using Il2CppAssets.Scripts.Unity;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
-using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Extensions;
@@ -9,7 +7,6 @@ using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.UI;
-using Object = UnityEngine.Object;
 
 namespace AscendedUpgrades;
 
