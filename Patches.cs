@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using BTD_Mod_Helper;
@@ -88,10 +89,8 @@ internal static class UpgradeObject_LoadUpgrades
         var upgradeId = AscendedUpgrade.IdByPath[__instance.path];
         __instance.upgradeButton.SetUpgradeModel(gameModel.GetUpgrade(upgradeId));
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
-        if (AscendedUpgradesMod.ShowUpgradePips)
-        {
-            ascendedPips.SetAmount(tower.GetAscendedStacks().First(pair => pair.Key.Path == __instance.path).Value);
-        }
+        ascendedPips.SetAmount(Math.Min(tower.GetAscendedStacks().First(pair => pair.Key.Path == __instance.path).Value,
+            AscendedUpgradesMod.MaxUpgradePips));
     }
 }
 
@@ -188,7 +187,7 @@ internal static class TowerManager_DestroyTower
     [HarmonyPrefix]
     private static void Prefix(Tower tower)
     {
-        if (tower.parentTowerId.Id != -1) return;
+        if (tower.ParentId.Id != -1) return;
 
         foreach (var (ascendedUpgrade, stacks) in tower.GetAscendedStacks())
         {

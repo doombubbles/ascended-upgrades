@@ -53,11 +53,14 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         icon = VanillaSprites.BiohackIconAA
     };
 
-    public static readonly ModSettingBool ShowUpgradePips = new(true)
+    public static readonly ModSettingInt MaxUpgradePips = new(25)
     {
-        displayName = "Show Upgrade Pips",
-        description = "Whether the grid of blue upgrade pips appears as you purchase Ascended Upgrades",
-        icon = ModContent.GetTextureGUID<AscendedUpgradesMod>("AscendedPip")
+        displayName = "Max Upgrade Pips",
+        description = "The max number of total blue upgrade that shoul appear as you purchase Ascended Upgrades",
+        icon = ModContent.GetTextureGUID<AscendedUpgradesMod>("AscendedPip"),
+        min = 0,
+        max = 100,
+        slider = true
     };
 
     public static readonly ModSettingBool ShowBuffIndicators = new(true)
