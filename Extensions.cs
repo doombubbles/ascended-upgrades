@@ -19,7 +19,7 @@ public static class Extensions
     public static bool HasAscendedUpgrades(this Tower tower) =>
         tower.towerModel.tier == 5 &&
         tower.towerModel.upgrades.Any(upgradePathModel => upgradePathModel.IsAscended()) &&
-        !tower.CanUpgradeToParagon(true, 3);
+        !tower.CanUpgradeToParagon();
 
     public static bool IsAscended(this UpgradePathModel model) => AscendedUpgrade.IdByPath.ContainsValue(model.upgrade);
 

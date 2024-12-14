@@ -1,2 +1,1 @@
-- Fixed for v45.0
-- Switched the Show Upgrade Pips checkbox setting to a Max Upgrade Pips slider setting
+- Fixed for v46
