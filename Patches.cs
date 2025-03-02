@@ -124,9 +124,7 @@ internal static class UpgradeButton_Visuals
         if (AscendedUpgrade.IdByPath.ContainsValue(upgradeId) &&
             __instance.upgradeStatus == UpgradeButton.UpgradeStatus.Purchasable)
         {
-            ResourceLoader.LoadSpriteFromSpriteReferenceAsync(
-                ModContent.GetSpriteReference<AscendedUpgradesMod>("AscendedArrowBtn"),
-                __instance.background);
+            __instance.background.SetSprite(ModContent.GetSprite<AscendedUpgradesMod>("AscendedArrowBtn"));
         }
     }
 }
