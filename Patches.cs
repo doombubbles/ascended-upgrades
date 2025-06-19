@@ -164,7 +164,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
 
         if (current.name.StartsWith(nameof(AscendedUpgrade)) && cost <= cash)
         {
-            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost);
+            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, 0);
             InGame.instance.SetCash(cash - cost);
 #if DEBUG
             ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
