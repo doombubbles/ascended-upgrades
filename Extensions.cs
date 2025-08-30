@@ -3,25 +3,22 @@ using System.Linq;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using BTD_Mod_Helper.Api;
-using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Simulation.Objects;
+using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppSystem.Linq;
 
 namespace AscendedUpgrades;
 
 public static class Extensions
 {
-    /// <summary>
-    /// For the moment, just don't show ascended upgrades if the tower is able to become a paragon
-    /// </summary>
-    /// <param name="tower"></param>
-    /// <returns></returns>
-    public static bool HasAscendedUpgrades(this Tower tower) =>
-        tower.towerModel.tier == 5 &&
-        tower.towerModel.upgrades.Any(upgradePathModel => upgradePathModel.IsAscended()) &&
-        !tower.CanUpgradeToParagon();
+    public static bool ShowAscendedUpgrades(this TowerSelectionMenu tsm) =>
+        tsm != null &&
+        tsm.selectedTower != null &&
+        tsm.upgradeButtons.All(o =>
+            o.upgradeButton.upgradeStatus == UpgradeButton.UpgradeStatus.None ||
+            o.upgradeButton.upgrade?.IsAscended() == true);
 
-    public static bool IsAscended(this UpgradePathModel model) => AscendedUpgrade.IdByPath.ContainsValue(model.upgrade);
+    public static bool IsAscended(this UpgradeModel upgrade) => AscendedUpgrade.IdByPath.ContainsValue(upgrade.name);
 
     public static int AscendedStackCount(this BehaviorMutator behaviorMutator) =>
         AscendedUpgrade.ById.TryGetValue(behaviorMutator.id, out var upgrade)

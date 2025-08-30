@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.Helpers;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts;
@@ -14,7 +15,6 @@ using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
-using Il2CppNinjaKiwi.Common.ResourceUtils;
 
 namespace AscendedUpgrades;
 
@@ -25,9 +25,10 @@ namespace AscendedUpgrades;
 internal class TowerSelectionMenu_IsUpgradePathClosed
 {
     [HarmonyPrefix]
-    internal static bool Prefix(TowerSelectionMenu __instance, ref bool __result)
+    [HarmonyPriority(Priority.Last)]
+    internal static bool Prefix(TowerSelectionMenu __instance, int path, ref bool __result)
     {
-        if (__instance.selectedTower.tower.HasAscendedUpgrades())
+        if (path <= 2 && __instance.ShowAscendedUpgrades())
         {
             __result = false;
             return false;
@@ -46,15 +47,25 @@ internal static class UpgradeObject_LoadUpgrades
     [HarmonyPostfix]
     private static void Postfix(UpgradeObject __instance)
     {
+        Setup(__instance, true);
+    }
+
+    private static void Setup(UpgradeObject __instance, bool retry)
+    {
+        if (retry) TaskScheduler.ScheduleTask(() => Setup(__instance, false));
+
         var ascendedPips = __instance.transform.GetComponentInChildren<AscendedPips>();
         if (ascendedPips == null)
         {
             ascendedPips = AscendedPips.Create(__instance);
         }
 
-        if (!__instance.tts.tower.HasAscendedUpgrades() || __instance.path >= 3)
+        if (!__instance.towerSelectionMenu.ShowAscendedUpgrades() || __instance.path >= 3)
         {
-            ascendedPips.SetAmount(0);
+            if (!retry)
+            {
+                ascendedPips.SetAmount(0);
+            }
             return;
         }
 
@@ -62,8 +73,11 @@ internal static class UpgradeObject_LoadUpgrades
         var upgradeId = AscendedUpgrade.IdByPath[__instance.path];
         __instance.upgradeButton.SetUpgradeModel(gameModel.GetUpgrade(upgradeId));
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
-        ascendedPips.SetAmount(Math.Min(tower.GetAscendedStacks().First(pair => pair.Key.Path == __instance.path).Value,
+        ascendedPips.SetAmount(Math.Min(
+            tower.GetAscendedStacks().First(pair => pair.Key.Path == __instance.path).Value,
             AscendedUpgradesMod.MaxUpgradePips));
+
+        __instance.UpdateVisuals(__instance.path, false);
     }
 }
 
@@ -74,7 +88,8 @@ internal static class UpgradeObject_LoadUpgrades
 internal static class UpgradeObject_IncreaseTier
 {
     [HarmonyPrefix]
-    private static bool Prefix(UpgradeObject __instance) => !__instance.tts.tower.HasAscendedUpgrades();
+    private static bool Prefix(UpgradeObject __instance) =>
+        (__instance.towerSelectionMenu?.selectedTower?.tower?.GetAscendedStacks().Values.Sum() ?? 0) == 0;
 }
 
 /// <summary>
@@ -124,67 +139,58 @@ internal static class UnityToSimulation_UpgradeTower_Impl
     internal static double cash;
 
     [HarmonyPostfix]
-    private static void Postfix(UnityToSimulation __instance, ObjectId id, int pathIndex, int inputId)
+    private static bool Prefix(UnityToSimulation __instance, ObjectId id, int callbackId, int pathIndex, int inputId)
     {
-        if (current == null || pathIndex >= 3) return;
+        if (current == null || pathIndex >= 3 || !current.name.StartsWith(nameof(AscendedUpgrade))) return true;
+
+        __instance.UnregisterCallback(callbackId, inputId);
 
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
 
-        if (!tower.HasAscendedUpgrades()) return;
-
         var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, 5);
 
-        if (current.name.StartsWith(nameof(AscendedUpgrade)) && cost <= cash)
-        {
-            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, 0);
-            InGame.instance.SetCash(cash - cost);
+        if (cost > cash) return false;
+
+        towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost);
+        __instance.Simulation.RemoveCash(cost, Simulation.CashType.Normal, tower.owner,
+            Simulation.CashSource.TowerUpgraded);
+
 #if DEBUG
-            ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
+        ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
 #endif
-            var ascendedUpgrade = AscendedUpgrade.ByPath[pathIndex];
-            var stacks = tower.GetAscendedStacks()[ascendedUpgrade];
-            ascendedUpgrade.Apply(tower, stacks + 1, 1);
-        }
+
+        var ascendedUpgrade = AscendedUpgrade.ByPath[pathIndex];
+        var stacks = tower.GetAscendedStacks()[ascendedUpgrade];
+        ascendedUpgrade.Apply(tower, stacks + 1);
+
+        return false;
     }
 }
 
 /// <summary>
-/// Undo possible upgrade cost changes if SharedTowerScaling is enabled
+/// Get upgrade cost for Ascended Upgrades
 /// </summary>
-[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.DestroyTower))]
-internal static class TowerManager_DestroyTower
+[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.GetTowerUpgradeCost))]
+internal static class TowerManager_GetTowerUpgradeCost
 {
     [HarmonyPrefix]
-    private static void Prefix(Tower tower)
+    internal static bool Prefix(Tower tower, int path, ref float __result)
     {
-        if (tower.ParentId.Id != -1) return;
+        if (TowerSelectionMenu.instance == null ||
+            TowerSelectionMenu.instance.selectedTower?.tower != tower ||
+            !TowerSelectionMenu.instance.ShowAscendedUpgrades()) return true;
 
-        foreach (var (ascendedUpgrade, stacks) in tower.GetAscendedStacks())
-        {
-            ascendedUpgrade.UnApply(stacks);
-        }
-    }
-}
+        __result = CostHelper.CostForDifficulty(AscendedUpgradesMod.BaseUpgradeCost, InGame.instance);
 
-/// <summary>
-/// Change the ascended upgrade cost based on how many have been purchased for the tower
-/// </summary>
-[HarmonyPatch(typeof(Simulation), nameof(Simulation.GetSimulationBehaviorDiscount))]
-internal static class Simulation_GetSimulationBehaviorDiscount
-{
-    [HarmonyPostfix]
-    private static void Postfix(Tower tower, int path, ref float __result)
-    {
-        if (tower.HasAscendedUpgrades() && !AscendedUpgradesMod.SharedTowerScaling)
-        {
-            var mult = AscendedUpgradesMod.IncreaseUpgradeCost / (float) AscendedUpgradesMod.BaseUpgradeCost;
-            var stacks = tower.GetAscendedStacks();
-            var amount = AscendedUpgradesMod.SharedUpgradeScaling
-                ? stacks.Sum(pair => pair.Value)
-                : stacks.Where(pair => pair.Key.Path == path).Select(pair => pair.Value).SingleOrDefault();
-            __result -= amount * mult;
-        }
+        var stacks = tower.GetAscendedStacks();
+        var amount = AscendedUpgradesMod.SharedUpgradeScaling
+                         ? stacks.Sum(pair => pair.Value)
+                         : stacks.Where(pair => pair.Key.Path == path).Select(pair => pair.Value).SingleOrDefault();
+
+        __result += amount * CostHelper.CostForDifficulty(AscendedUpgradesMod.IncreaseUpgradeCost, InGame.instance);
+
+        return false;
     }
 }
 

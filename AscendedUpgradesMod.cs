@@ -1,16 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MelonLoader;
 using BTD_Mod_Helper;
 using AscendedUpgrades;
-using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Profile;
-using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Enums;
+using BTD_Mod_Helper.Api.Helpers;
 using BTD_Mod_Helper.Api.ModOptions;
 using BTD_Mod_Helper.Extensions;
+using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 
 [assembly: MelonInfo(typeof(AscendedUpgradesMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
@@ -25,7 +26,7 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         min = 1000,
         onSave = cost => ModContent.GetContent<AscendedUpgrade>()
             .ForEach(upgrade => upgrade.GetUpgradeModel().cost = (int) cost),
-        icon = VanillaSprites.CoinIcon // VanillaSprites.MoneyBag
+        icon = VanillaSprites.CoinIcon
     };
 
     public static readonly ModSettingInt IncreaseUpgradeCost = new(500)
@@ -81,18 +82,6 @@ public class AscendedUpgradesMod : BloonsTD6Mod
         enabledButton = VanillaSprites.YellowBtnLong
     };
 
-    public static readonly ModSettingBool SharedTowerScaling = new(false)
-    {
-        displayName = "Cost Scaling Across Towers",
-        description =
-            "Whether Ascended Upgrade cost scaling happens globally across all towers or is personal for each tower.",
-        button = true,
-        disabledText = "Personal",
-        disabledButton = VanillaSprites.BlueBtnLong,
-        enabledText = "Global",
-        enabledButton = VanillaSprites.YellowBtnLong
-    };
-
     public override void OnProfileLoaded(ProfileModel profile)
     {
         foreach (var ascendedUpgrade in ModContent.GetContent<AscendedUpgrade>())
@@ -127,22 +116,58 @@ public class AscendedUpgradesMod : BloonsTD6Mod
             if (saveData.metaData.ContainsKey(ascendedUpgrade.Id) &&
                 int.TryParse(saveData.metaData[ascendedUpgrade.Id], out var stacks))
             {
-                ascendedUpgrade.Apply(tower, stacks, stacks);
+                ascendedUpgrade.Apply(tower, stacks);
             }
         }
     }
 
-    public override void OnNewGameModel(GameModel gameModel)
+    private static Dictionary<AscendedUpgrade, int>? clipboard;
+
+    public override object Call(string operation, params object[] parameters)
     {
-        foreach (var towerModel in gameModel.towers.Where(model => !model.IsHero()))
+        switch (operation)
         {
-            var upgradeModels = towerModel.upgrades.Select(model => gameModel.GetUpgrade(model.upgrade));
-            if (towerModel.tier == 5 && upgradeModels.All(model => model.IsParagon)) // Either none, or all paragon
-            {
-                towerModel.upgrades = ModContent.GetContent<AscendedUpgrade>()
-                    .Select(upgrade => new UpgradePathModel(upgrade.Id, towerModel.name))
-                    .ToIl2CppReferenceArray();
-            }
+            case "OnTowerCopied" when parameters.CheckTypes(out Tower towerCopied):
+                clipboard = towerCopied.GetAscendedStacks();
+                break;
+            case "OnTowerPasted" when parameters.CheckTypes(out Tower towerPasted):
+                if (clipboard != null)
+                {
+                    foreach (var (ascendedUpgrade, stacks) in clipboard)
+                    {
+                        ascendedUpgrade.Apply(towerPasted, stacks);
+                    }
+                }
+                break;
+            case "OnClipboardCleared":
+                clipboard = null;
+                break;
+            case "ModifyClipboardCost" when parameters.CheckTypes(out Tower tower):
+                var total = 0;
+                var count = 0;
+                foreach (var (_, stacks) in tower.GetAscendedStacks())
+                {
+                    if (SharedUpgradeScaling)
+                    {
+                        for (var i = 0; i < stacks; i++)
+                        {
+                            total += CostHelper.CostForDifficulty(BaseUpgradeCost, InGame.instance);
+                            total += (count++ + i) * CostHelper.CostForDifficulty(IncreaseUpgradeCost, InGame.instance);
+                        }
+                    }
+                    else
+                    {
+                        for (var i = 0; i < stacks; i++)
+                        {
+                            total += CostHelper.CostForDifficulty(BaseUpgradeCost, InGame.instance);
+                            total += i * CostHelper.CostForDifficulty(IncreaseUpgradeCost, InGame.instance);
+                        }
+                    }
+                }
+
+                return total;
         }
+
+        return base.Call(operation, parameters);
     }
 }

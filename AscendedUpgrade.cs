@@ -54,47 +54,14 @@ public abstract class AscendedUpgrade : NamedModContent
     public UpgradeModel GetUpgradeModel(GameModel? gameModel = null) =>
         (gameModel ?? InGame.instance.Exists()?.GetGameModel() ?? Game.instance.model).GetUpgrade(Id);
 
-    public void Apply(Tower tower, int stacks, int delta)
+    public void Apply(Tower tower, int stacks)
     {
         tower.RemoveMutatorsById(Id);
-        tower.AddMutatorIncludeSubTowers(CreateMutator(stacks));
-        ChangeUpgradeCosts(stacks);
+
+        var mutator = CreateMutator(stacks);
+        mutator.cantBeAbsorbed = false;
+        tower.AddMutatorIncludeSubTowers(mutator);
     }
-
-    public void UnApply(int stacks)
-    {
-        ChangeUpgradeCosts(-stacks);
-    }
-
-    private void ChangeUpgradeCosts(int deltaStacks)
-    {
-        if (!AscendedUpgradesMod.SharedTowerScaling) return;
-
-        var gameModel = InGame.instance.bridge.Model;
-        var affected = AscendedUpgradesMod.SharedUpgradeScaling
-            ? GetContent<AscendedUpgrade>()
-            : new List<AscendedUpgrade> { this };
-
-        foreach (var ascendedUpgrade in affected)
-        {
-            ascendedUpgrade.GetUpgradeModel(gameModel).cost +=
-                CostHelper.CostForDifficulty(deltaStacks * AscendedUpgradesMod.IncreaseUpgradeCost, gameModel);
-        }
-
-        if (TowerSelectionMenu.instance.Exists(out var tsm) && tsm.upgradeButtons != null)
-        {
-            for (var i = 0; i < tsm.upgradeButtons.Count; i++)
-            {
-                var upgradeButton = tsm.upgradeButtons[i];
-                if (upgradeButton != null)
-                {
-                    upgradeButton.UpdateCost();
-                    upgradeButton.UpdateVisuals(i, false);
-                }
-            }
-        }
-    }
-
     public virtual int GetStacks(BehaviorMutator behaviorMutator) => behaviorMutator.priority;
 
     protected static float GetFactor(int stacks) => AscendedUpgradesMod.OpMultiplicativeScaling
