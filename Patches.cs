@@ -143,18 +143,15 @@ internal static class UnityToSimulation_UpgradeTower_Impl
     {
         if (current == null || pathIndex >= 3 || !current.name.StartsWith(nameof(AscendedUpgrade))) return true;
 
-        __instance.UnregisterCallback(callbackId, inputId);
+        var action = __instance.UnregisterCallback(callbackId, inputId);
 
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
 
         var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, 5);
 
-        if (cost > cash) return false;
-
         towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost);
-        __instance.Simulation.RemoveCash(cost, Simulation.CashType.Normal, tower.owner,
-            Simulation.CashSource.TowerUpgraded);
+        InGame.instance.SetCash(cash - cost);
 
 #if DEBUG
         ModHelper.Msg<AscendedUpgradesMod>($"Doing ascended upgrade {pathIndex} with cost {cost}");
@@ -163,6 +160,13 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         var ascendedUpgrade = AscendedUpgrade.ByPath[pathIndex];
         var stacks = tower.GetAscendedStacks()[ascendedUpgrade];
         ascendedUpgrade.Apply(tower, stacks + 1);
+
+        if (action != null)
+        {
+            action.Invoke(true);
+        }
+        UpgradeButton.upgradeCashOffset = 0;
+        current = null;
 
         return false;
     }

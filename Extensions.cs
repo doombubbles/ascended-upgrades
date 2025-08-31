@@ -14,9 +14,10 @@ public static class Extensions
     public static bool ShowAscendedUpgrades(this TowerSelectionMenu tsm) =>
         tsm != null &&
         tsm.selectedTower != null &&
-        tsm.upgradeButtons.All(o =>
-            o.upgradeButton.upgradeStatus == UpgradeButton.UpgradeStatus.None ||
-            o.upgradeButton.upgrade?.IsAscended() == true);
+        (tsm.upgradeButtons.All(o =>
+             o.upgradeButton.upgradeStatus == UpgradeButton.UpgradeStatus.None ||
+             o.upgradeButton.upgrade?.IsAscended() == true) ||
+         tsm.selectedTower.tower.GetAscendedStacks().Values.Sum() > 0);
 
     public static bool IsAscended(this UpgradeModel upgrade) => AscendedUpgrade.IdByPath.ContainsValue(upgrade.name);
 
