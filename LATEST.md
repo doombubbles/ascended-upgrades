@@ -1,2 +1,1 @@
-- Fixed an issue with Ascended Upgrades sometimes costing too much money
-- Fixed an issue with Ascended Upgrades not always appearing visually purchasable when they should be
+- Recompiled for v52
